@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,9 @@ export function ProductModal({ open, onOpenChange, editing }: Props) {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? "Editar producto" : "Nuevo producto"}</DialogTitle>
+          <DialogDescription>
+            Completá los datos del producto. Los campos nombre y categoría son obligatorios.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="flex gap-4 items-center">

@@ -9,14 +9,20 @@ const Ctx = createContext<AuthState | null>(null);
 const KEY = "vertbien-user";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(KEY);
-  });
+  const [user, setUser] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
   useEffect(() => {
+    const stored = localStorage.getItem(KEY);
+    if (stored) setUser(stored);
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     if (user) localStorage.setItem(KEY, user);
     else localStorage.removeItem(KEY);
-  }, [user]);
+  }, [user, hydrated]);
   return (
     <Ctx.Provider value={{ user, login: setUser, logout: () => setUser(null) }}>
       {children}
