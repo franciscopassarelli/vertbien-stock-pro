@@ -58,18 +58,21 @@ const seed = {
 };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState(() => {
-    if (typeof window === "undefined") return seed;
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) return JSON.parse(raw);
-    } catch {}
-    return seed;
-  });
+  const [state, setState] = useState(seed);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) setState(JSON.parse(raw));
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
-  }, [state]);
+  }, [state, hydrated]);
 
   const addProduct = useCallback((p: Omit<Product, "id">) => {
     setState((s: any) => ({ ...s, products: [...s.products, { ...p, id: crypto.randomUUID() }] }));
