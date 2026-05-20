@@ -3,8 +3,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/lib/store";
-import { Plus, Trash2, Tags } from "lucide-react";
+import { Plus, Trash2, Tags, Eye, Package } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/categories")({
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/_app/categories")({
 function CategoriesPage() {
   const { categories, products, addCategory, deleteCategory } = useStore();
   const [name, setName] = useState("");
+  const [openCat, setOpenCat] = useState<string | null>(null);
 
   const counts = categories.map((c) => ({
     name: c,
@@ -60,16 +63,53 @@ function CategoriesPage() {
                 </div>
                 <div>
                   <p className="font-medium">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">{c.total} productos · {c.stock} en stock</p>
+                  <button
+                    type="button"
+                    onClick={() => setOpenCat(c.name)}
+                    className="text-xs text-muted-foreground hover:text-primary hover:underline text-left"
+                  >
+                    {c.total} productos · {c.stock} en stock
+                  </button>
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={() => remove(c.name)}>
                 <Trash2 className="w-4 h-4 text-destructive" />
               </Button>
             </div>
+            <Button variant="outline" size="sm" className="w-full mt-4" onClick={() => setOpenCat(c.name)}>
+              <Eye className="w-4 h-4 mr-2" /> Ver detalles
+            </Button>
           </Card>
         ))}
       </div>
+
+      <Dialog open={!!openCat} onOpenChange={(o) => !o && setOpenCat(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Categoría: {openCat}</DialogTitle>
+            <DialogDescription>Productos asociados a esta categoría</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            {openCat && products.filter((p) => p.categoria === openCat).map((p) => (
+              <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                  {p.url_imagen ? <img src={p.url_imagen} alt={p.nombre} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-muted-foreground" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{p.nombre}</p>
+                  <p className="text-xs text-muted-foreground">${p.precio.toFixed(2)} / {p.unidad}</p>
+                </div>
+                <Badge variant={p.stock < 5 ? "destructive" : "secondary"}>
+                  Stock: {p.stock}
+                </Badge>
+              </div>
+            ))}
+            {openCat && products.filter((p) => p.categoria === openCat).length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">No hay productos en esta categoría</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
