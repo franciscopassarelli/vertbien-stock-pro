@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useStore } from "@/lib/store";
 import { Plus, TrendingUp, ShoppingCart } from "lucide-react";
 
-export const Route = createFileRoute("/_app/sales")({
+export const Route = createFileRoute("/_app/sales/")({
   head: () => ({ meta: [{ title: "Ventas — VertBien" }] }),
   component: SalesPage,
 });
