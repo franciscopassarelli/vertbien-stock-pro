@@ -12,10 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppSalesRouteImport } from './routes/_app.sales'
 import { Route as AppProductsRouteImport } from './routes/_app.products'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCategoriesRouteImport } from './routes/_app.categories'
+import { Route as AppSalesIndexRouteImport } from './routes/_app.sales.index'
 import { Route as AppSalesNewRouteImport } from './routes/_app.sales.new'
 
 const LoginRoute = LoginRouteImport.update({
@@ -32,11 +32,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppSalesRoute = AppSalesRouteImport.update({
-  id: '/sales',
-  path: '/sales',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppProductsRoute = AppProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -52,10 +47,15 @@ const AppCategoriesRoute = AppCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSalesIndexRoute = AppSalesIndexRouteImport.update({
+  id: '/sales/',
+  path: '/sales/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSalesNewRoute = AppSalesNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AppSalesRoute,
+  id: '/sales/new',
+  path: '/sales/new',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -64,8 +64,8 @@ export interface FileRoutesByFullPath {
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
   '/products': typeof AppProductsRoute
-  '/sales': typeof AppSalesRouteWithChildren
   '/sales/new': typeof AppSalesNewRoute
+  '/sales/': typeof AppSalesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -73,8 +73,8 @@ export interface FileRoutesByTo {
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
   '/products': typeof AppProductsRoute
-  '/sales': typeof AppSalesRouteWithChildren
   '/sales/new': typeof AppSalesNewRoute
+  '/sales': typeof AppSalesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -84,8 +84,8 @@ export interface FileRoutesById {
   '/_app/categories': typeof AppCategoriesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/products': typeof AppProductsRoute
-  '/_app/sales': typeof AppSalesRouteWithChildren
   '/_app/sales/new': typeof AppSalesNewRoute
+  '/_app/sales/': typeof AppSalesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -95,8 +95,8 @@ export interface FileRouteTypes {
     | '/categories'
     | '/dashboard'
     | '/products'
-    | '/sales'
     | '/sales/new'
+    | '/sales/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -104,8 +104,8 @@ export interface FileRouteTypes {
     | '/categories'
     | '/dashboard'
     | '/products'
-    | '/sales'
     | '/sales/new'
+    | '/sales'
   id:
     | '__root__'
     | '/'
@@ -114,8 +114,8 @@ export interface FileRouteTypes {
     | '/_app/categories'
     | '/_app/dashboard'
     | '/_app/products'
-    | '/_app/sales'
     | '/_app/sales/new'
+    | '/_app/sales/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -147,13 +147,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/sales': {
-      id: '/_app/sales'
-      path: '/sales'
-      fullPath: '/sales'
-      preLoaderRoute: typeof AppSalesRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/products': {
       id: '/_app/products'
       path: '/products'
@@ -175,40 +168,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCategoriesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/sales/': {
+      id: '/_app/sales/'
+      path: '/sales'
+      fullPath: '/sales/'
+      preLoaderRoute: typeof AppSalesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/sales/new': {
       id: '/_app/sales/new'
-      path: '/new'
+      path: '/sales/new'
       fullPath: '/sales/new'
       preLoaderRoute: typeof AppSalesNewRouteImport
-      parentRoute: typeof AppSalesRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
-
-interface AppSalesRouteChildren {
-  AppSalesNewRoute: typeof AppSalesNewRoute
-}
-
-const AppSalesRouteChildren: AppSalesRouteChildren = {
-  AppSalesNewRoute: AppSalesNewRoute,
-}
-
-const AppSalesRouteWithChildren = AppSalesRoute._addFileChildren(
-  AppSalesRouteChildren,
-)
 
 interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppProductsRoute: typeof AppProductsRoute
-  AppSalesRoute: typeof AppSalesRouteWithChildren
+  AppSalesNewRoute: typeof AppSalesNewRoute
+  AppSalesIndexRoute: typeof AppSalesIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppProductsRoute: AppProductsRoute,
-  AppSalesRoute: AppSalesRouteWithChildren,
+  AppSalesNewRoute: AppSalesNewRoute,
+  AppSalesIndexRoute: AppSalesIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -221,3 +211,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
