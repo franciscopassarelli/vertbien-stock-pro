@@ -9,11 +9,13 @@ export const Route = createFileRoute("/_app")({
 });
 
 function AppLayout() {
-  const { user } = useAuth();
+  const { user, hydrated } = useAuth();
   const nav = useNavigate();
   useEffect(() => {
-    if (!user) nav({ to: "/login" });
-  }, [user, nav]);
+    if (hydrated && !user) nav({ to: "/login" });
+  }, [user, hydrated, nav]);
+
+  if (!hydrated) return null;
 
   return (
     <SidebarProvider>
