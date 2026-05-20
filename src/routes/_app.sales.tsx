@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +14,28 @@ export const Route = createFileRoute("/_app/sales")({
 
 function SalesPage() {
   const { sales } = useStore();
-  const today = new Date().toDateString();
-  const todaySales = sales.filter((s) => new Date(s.fecha).toDateString() === today);
-  const totalToday = todaySales.reduce((a, s) => a + s.total, 0);
-  const ticketAvg = todaySales.length ? totalToday / todaySales.length : 0;
+  const [range, setRange] = useState<"day" | "week" | "month" | "all">("day");
+
+  const filteredSales = useMemo(() => {
+    if (range === "all") return sales;
+    const now = new Date();
+    const start = new Date(now);
+    if (range === "day") start.setHours(0, 0, 0, 0);
+    else if (range === "week") { start.setDate(now.getDate() - 7); start.setHours(0,0,0,0); }
+    else if (range === "month") { start.setMonth(now.getMonth() - 1); start.setHours(0,0,0,0); }
+    return sales.filter((s) => new Date(s.fecha) >= start);
+  }, [sales, range]);
+
+  const totalRange = filteredSales.reduce((a, s) => a + s.total, 0);
+  const ticketAvg = filteredSales.length ? totalRange / filteredSales.length : 0;
+  const rangeLabel = range === "day" ? "hoy" : range === "week" ? "últ. 7 días" : range === "month" ? "últ. 30 días" : "total";
+
+  const ranges: { k: typeof range; label: string }[] = [
+    { k: "day", label: "Día" },
+    { k: "week", label: "Semana" },
+    { k: "month", label: "Mes" },
+    { k: "all", label: "Todo" },
+  ];
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -28,12 +47,20 @@ function SalesPage() {
         <Button asChild><Link to="/sales/new"><Plus className="w-4 h-4 mr-2" />Nueva venta</Link></Button>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {ranges.map((r) => (
+          <Button key={r.k} size="sm" variant={range === r.k ? "default" : "outline"} onClick={() => setRange(r.k)}>
+            {r.label}
+          </Button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-5" style={{ boxShadow: "var(--shadow-soft)" }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground uppercase">Total hoy</p>
-              <p className="text-2xl font-semibold mt-2">${totalToday.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground uppercase">Total {rangeLabel}</p>
+              <p className="text-2xl font-semibold mt-2">${totalRange.toFixed(2)}</p>
             </div>
             <TrendingUp className="w-8 h-8 text-primary" />
           </div>
@@ -50,8 +77,8 @@ function SalesPage() {
         <Card className="p-5" style={{ boxShadow: "var(--shadow-soft)" }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground uppercase">Ventas hoy</p>
-              <p className="text-2xl font-semibold mt-2">{todaySales.length}</p>
+              <p className="text-xs text-muted-foreground uppercase">Ventas {rangeLabel}</p>
+              <p className="text-2xl font-semibold mt-2">{filteredSales.length}</p>
             </div>
             <ShoppingCart className="w-8 h-8 text-primary" />
           </div>
@@ -71,7 +98,7 @@ function SalesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sales.map((s) => (
+            {filteredSales.map((s) => (
               <TableRow key={s.id}>
                 <TableCell className="font-mono text-xs text-muted-foreground">{s.id.slice(0, 8)}</TableCell>
                 <TableCell>{new Date(s.fecha).toLocaleString()}</TableCell>
@@ -81,8 +108,8 @@ function SalesPage() {
                 <TableCell className="text-right font-semibold">${s.total.toFixed(2)}</TableCell>
               </TableRow>
             ))}
-            {sales.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No hay ventas registradas</TableCell></TableRow>
+            {filteredSales.length === 0 && (
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No hay ventas en este rango</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
