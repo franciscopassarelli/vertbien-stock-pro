@@ -15,16 +15,21 @@ export const Route = createFileRoute("/_app/sales/new")({
 });
 
 function NewSale() {
-  const { products, addSale, updateProduct } = useStore();
+  const { products, categories, addSale, updateProduct } = useStore();
   const nav = useNavigate();
   const [q, setQ] = useState("");
+  const [cat, setCat] = useState<string>("all");
   const [cart, setCart] = useState<SaleItem[]>([]);
   const [vendedor, setVendedor] = useState("");
   const [metodo, setMetodo] = useState<Sale["metodoPago"]>("Efectivo");
 
   const filtered = useMemo(
-    () => products.filter((p) => p.nombre.toLowerCase().includes(q.toLowerCase())).slice(0, 12),
-    [products, q]
+    () =>
+      products
+        .filter((p) => (cat === "all" ? true : p.categoria === cat))
+        .filter((p) => p.nombre.toLowerCase().includes(q.toLowerCase()))
+        .slice(0, 24),
+    [products, q, cat]
   );
 
   const addToCart = (id: string) => {
@@ -69,6 +74,12 @@ function NewSale() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Buscar producto..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" autoFocus />
+          </div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <Button size="sm" variant={cat === "all" ? "default" : "outline"} onClick={() => setCat("all")}>Todas</Button>
+            {categories.map((c) => (
+              <Button key={c} size="sm" variant={cat === c ? "default" : "outline"} onClick={() => setCat(c)}>{c}</Button>
+            ))}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
             {filtered.map((p) => (

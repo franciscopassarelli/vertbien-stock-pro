@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 
 interface AuthState {
   user: string | null;
+  hydrated: boolean;
   login: (u: string) => void;
   logout: () => void;
 }
@@ -24,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem(KEY);
   }, [user, hydrated]);
   return (
-    <Ctx.Provider value={{ user, login: setUser, logout: () => setUser(null) }}>
+    <Ctx.Provider value={{ user, hydrated, login: setUser, logout: () => setUser(null) }}>
       {children}
     </Ctx.Provider>
   );
