@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Package, Tags, ShoppingCart, LogOut, Leaf, Plus } from "lucide-react";
+import { LayoutDashboard, Package, Tags, ShoppingCart, LogOut, Leaf, Plus, Settings } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
@@ -13,6 +13,7 @@ const items = [
   { title: "Categorías", url: "/categories", icon: Tags },
   { title: "Ventas", url: "/sales", icon: ShoppingCart },
   { title: "Nueva Venta", url: "/sales/new", icon: Plus },
+  { title: "Configuración", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {

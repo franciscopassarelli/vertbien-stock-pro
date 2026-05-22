@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { useStore } from "@/lib/store";
+import { useStore, getStockState } from "@/lib/store";
 import { Plus, Trash2, Tags, Eye, Package } from "lucide-react";
 import { toast } from "sonner";
 
@@ -99,9 +99,14 @@ function CategoriesPage() {
                   <p className="font-medium truncate">{p.nombre}</p>
                   <p className="text-xs text-muted-foreground">${p.precio.toFixed(2)} / {p.unidad}</p>
                 </div>
-                <Badge variant={p.stock < 5 ? "destructive" : "secondary"}>
-                  Stock: {p.stock}
-                </Badge>
+                {(() => {
+                  const st = getStockState(p);
+                  return (
+                    <Badge variant={st === "critical" ? "destructive" : st === "low" ? "outline" : "secondary"}>
+                      {p.stock} {p.unidad}
+                    </Badge>
+                  );
+                })()}
               </div>
             ))}
             {openCat && products.filter((p) => p.categoria === openCat).length === 0 && (

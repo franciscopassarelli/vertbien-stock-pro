@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useStore, Product } from "@/lib/store";
+import { useStore, Product, getStockState } from "@/lib/store";
 import { ProductModal } from "@/components/ProductModal";
 import { Plus, Pencil, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
@@ -64,7 +64,17 @@ function ProductsPage() {
                 <TableCell className="text-muted-foreground">{p.unidad}</TableCell>
                 <TableCell className="text-right">${p.precio.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
-                  <span className={p.stock < 5 ? "text-destructive font-medium" : ""}>{p.stock}</span>
+                  {(() => {
+                    const st = getStockState(p);
+                    const cls = st === "critical" ? "bg-destructive/15 text-destructive border-destructive/30"
+                      : st === "low" ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                      : "bg-muted text-foreground border-border";
+                    return (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-medium ${cls}`}>
+                        {p.stock} {p.unidad}
+                      </span>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => { setEditing(p); setOpen(true); }}>

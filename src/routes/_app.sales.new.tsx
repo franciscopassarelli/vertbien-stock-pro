@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useStore, VENDEDORAS, SaleItem, Sale } from "@/lib/store";
+import { useStore, SaleItem, Sale, PAYMENT_METHODS, PaymentMethod } from "@/lib/store";
+import { useSettings } from "@/lib/settings";
 import { Plus, Minus, Trash2, Search, Package } from "lucide-react";
 import { toast } from "sonner";
 
@@ -16,12 +17,13 @@ export const Route = createFileRoute("/_app/sales/new")({
 
 function NewSale() {
   const { products, categories, addSale, updateProduct } = useStore();
+  const { vendedores } = useSettings();
   const nav = useNavigate();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string>("all");
   const [cart, setCart] = useState<SaleItem[]>([]);
   const [vendedor, setVendedor] = useState("");
-  const [metodo, setMetodo] = useState<Sale["metodoPago"]>("Efectivo");
+  const [metodo, setMetodo] = useState<PaymentMethod>("Efectivo");
 
   const filtered = useMemo(
     () =>
@@ -81,14 +83,21 @@ function NewSale() {
               <Button key={c} size="sm" variant={cat === c ? "default" : "outline"} onClick={() => setCat(c)}>{c}</Button>
             ))}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
             {filtered.map((p) => (
-              <button key={p.id} onClick={() => addToCart(p.id)} className="text-left p-3 rounded-lg border border-border hover:border-primary hover:bg-accent/50 transition-colors">
-                <div className="w-full aspect-square rounded-md bg-muted mb-2 overflow-hidden flex items-center justify-center">
-                  {p.url_imagen ? <img src={p.url_imagen} alt={p.nombre} className="w-full h-full object-cover" /> : <Package className="w-6 h-6 text-muted-foreground" />}
+              <button
+                key={p.id}
+                onClick={() => addToCart(p.id)}
+                className="flex items-center gap-3 p-2 rounded-lg border border-border hover:border-primary hover:bg-accent/40 transition-colors text-left"
+              >
+                <div className="w-12 h-12 rounded-md bg-muted overflow-hidden flex items-center justify-center shrink-0">
+                  {p.url_imagen ? <img src={p.url_imagen} alt={p.nombre} className="w-full h-full object-cover" /> : <Package className="w-5 h-5 text-muted-foreground" />}
                 </div>
-                <p className="text-sm font-medium truncate">{p.nombre}</p>
-                <p className="text-xs text-muted-foreground">${p.precio.toFixed(2)} · {p.unidad}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{p.nombre}</p>
+                  <p className="text-xs text-muted-foreground truncate">${p.precio.toFixed(2)} / {p.unidad} · stock {p.stock}</p>
+                </div>
+                <Plus className="w-4 h-4 text-primary shrink-0" />
               </button>
             ))}
             {filtered.length === 0 && <p className="text-sm text-muted-foreground col-span-full text-center py-6">Sin resultados</p>}
@@ -122,19 +131,16 @@ function NewSale() {
             <Select value={vendedor} onValueChange={setVendedor}>
               <SelectTrigger><SelectValue placeholder="Seleccionar vendedora" /></SelectTrigger>
               <SelectContent>
-                {VENDEDORAS.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label>Método de pago</Label>
-            <Select value={metodo} onValueChange={(v: Sale["metodoPago"]) => setMetodo(v)}>
+            <Select value={metodo} onValueChange={(v: PaymentMethod) => setMetodo(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Efectivo">Efectivo</SelectItem>
-                <SelectItem value="Transferencia">Transferencia</SelectItem>
-                <SelectItem value="Tarjeta">Tarjeta</SelectItem>
-                <SelectItem value="QR">QR</SelectItem>
+                {PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

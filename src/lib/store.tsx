@@ -1,6 +1,15 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 
-export type Unit = "unidad" | "kg" | "litro";
+export type Unit = "unidad" | "kg" | "gramo" | "litro" | "ml";
+
+export const UNITS: Unit[] = ["unidad", "kg", "gramo", "litro", "ml"];
+export const UNIT_LABELS: Record<Unit, string> = {
+  unidad: "Unidad",
+  kg: "Kilogramo",
+  gramo: "Gramo",
+  litro: "Litro",
+  ml: "Mililitro",
+};
 
 export interface Product {
   id: string;
@@ -10,6 +19,8 @@ export interface Product {
   unidad: Unit;
   stock: number;
   url_imagen: string;
+  stockBajo: number;
+  stockCritico: number;
 }
 
 export interface SaleItem {
@@ -24,11 +35,33 @@ export interface Sale {
   fecha: string;
   items: SaleItem[];
   vendedor: string;
-  metodoPago: "Efectivo" | "Transferencia" | "Tarjeta" | "QR";
+  metodoPago: PaymentMethod;
   total: number;
 }
 
-export const VENDEDORAS = ["Ana", "Lucía", "Sofía", "Martina", "Valentina"];
+export type PaymentMethod =
+  | "Efectivo"
+  | "Transferencia"
+  | "Débito"
+  | "Crédito"
+  | "QR"
+  | "Mercado Pago";
+
+export const PAYMENT_METHODS: PaymentMethod[] = [
+  "Efectivo",
+  "Transferencia",
+  "Débito",
+  "Crédito",
+  "QR",
+  "Mercado Pago",
+];
+
+export type StockState = "ok" | "low" | "critical";
+export function getStockState(p: Product): StockState {
+  if (p.stock <= p.stockCritico) return "critical";
+  if (p.stock <= p.stockBajo) return "low";
+  return "ok";
+}
 
 interface StoreState {
   products: Product[];
@@ -49,10 +82,10 @@ const KEY = "vertbien-store-v1";
 const seed = {
   categories: ["Limpieza", "Cocina", "Personal"],
   products: [
-    { id: "p1", nombre: "Detergente Concentrado", categoria: "Limpieza", precio: 1200, unidad: "litro" as Unit, stock: 25, url_imagen: "" },
-    { id: "p2", nombre: "Aceite de Girasol", categoria: "Cocina", precio: 1800, unidad: "litro" as Unit, stock: 18, url_imagen: "" },
-    { id: "p3", nombre: "Jabón en Polvo", categoria: "Limpieza", precio: 950, unidad: "kg" as Unit, stock: 40, url_imagen: "" },
-    { id: "p4", nombre: "Esponja Multiuso", categoria: "Limpieza", precio: 350, unidad: "unidad" as Unit, stock: 60, url_imagen: "" },
+    { id: "p1", nombre: "Detergente Concentrado", categoria: "Limpieza", precio: 1200, unidad: "litro" as Unit, stock: 25, url_imagen: "", stockBajo: 10, stockCritico: 3 },
+    { id: "p2", nombre: "Aceite de Girasol", categoria: "Cocina", precio: 1800, unidad: "litro" as Unit, stock: 18, url_imagen: "", stockBajo: 8, stockCritico: 2 },
+    { id: "p3", nombre: "Jabón en Polvo", categoria: "Limpieza", precio: 950, unidad: "kg" as Unit, stock: 40, url_imagen: "", stockBajo: 15, stockCritico: 5 },
+    { id: "p4", nombre: "Esponja Multiuso", categoria: "Limpieza", precio: 350, unidad: "unidad" as Unit, stock: 60, url_imagen: "", stockBajo: 20, stockCritico: 5 },
   ],
   sales: [] as Sale[],
 };
@@ -64,7 +97,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setState(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Migración: asegurar campos nuevos
+        parsed.products = (parsed.products || []).map((p: any) => ({
+          stockBajo: 10,
+          stockCritico: 3,
+          ...p,
+        }));
+        setState(parsed);
+      }
     } catch {}
     setHydrated(true);
   }, []);
