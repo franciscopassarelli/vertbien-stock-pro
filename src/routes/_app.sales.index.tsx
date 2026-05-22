@@ -4,8 +4,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useStore } from "@/lib/store";
-import { Plus, TrendingUp, ShoppingCart } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useStore, Sale, PAYMENT_METHODS } from "@/lib/store";
+import { useSettings } from "@/lib/settings";
+import { SaleDetailModal } from "@/components/SaleDetailModal";
+import { Plus, TrendingUp, ShoppingCart, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/_app/sales/")({
   head: () => ({ meta: [{ title: "Ventas — VertBien" }] }),
@@ -14,17 +17,26 @@ export const Route = createFileRoute("/_app/sales/")({
 
 function SalesPage() {
   const { sales } = useStore();
+  const { vendedores } = useSettings();
   const [range, setRange] = useState<"day" | "week" | "month" | "all">("day");
+  const [vendor, setVendor] = useState<string>("all");
+  const [method, setMethod] = useState<string>("all");
+  const [selected, setSelected] = useState<Sale | null>(null);
 
   const filteredSales = useMemo(() => {
-    if (range === "all") return sales;
-    const now = new Date();
-    const start = new Date(now);
-    if (range === "day") start.setHours(0, 0, 0, 0);
-    else if (range === "week") { start.setDate(now.getDate() - 7); start.setHours(0,0,0,0); }
-    else if (range === "month") { start.setMonth(now.getMonth() - 1); start.setHours(0,0,0,0); }
-    return sales.filter((s) => new Date(s.fecha) >= start);
-  }, [sales, range]);
+    let list = sales;
+    if (range !== "all") {
+      const now = new Date();
+      const start = new Date(now);
+      if (range === "day") start.setHours(0, 0, 0, 0);
+      else if (range === "week") { start.setDate(now.getDate() - 7); start.setHours(0,0,0,0); }
+      else if (range === "month") { start.setMonth(now.getMonth() - 1); start.setHours(0,0,0,0); }
+      list = list.filter((s) => new Date(s.fecha) >= start);
+    }
+    if (vendor !== "all") list = list.filter((s) => s.vendedor === vendor);
+    if (method !== "all") list = list.filter((s) => s.metodoPago === method);
+    return list;
+  }, [sales, range, vendor, method]);
 
   const totalRange = filteredSales.reduce((a, s) => a + s.total, 0);
   const ticketAvg = filteredSales.length ? totalRange / filteredSales.length : 0;
@@ -53,6 +65,22 @@ function SalesPage() {
             {r.label}
           </Button>
         ))}
+        <div className="flex gap-2 ml-auto">
+          <Select value={vendor} onValueChange={setVendor}>
+            <SelectTrigger className="w-[160px] h-8"><SelectValue placeholder="Vendedor" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los vendedores</SelectItem>
+              {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={method} onValueChange={setMethod}>
+            <SelectTrigger className="w-[160px] h-8"><SelectValue placeholder="Método" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los métodos</SelectItem>
+              {PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -95,6 +123,7 @@ function SalesPage() {
               <TableHead>Vendedor</TableHead>
               <TableHead>Método</TableHead>
               <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -106,14 +135,21 @@ function SalesPage() {
                 <TableCell>{s.vendedor}</TableCell>
                 <TableCell><Badge variant="secondary">{s.metodoPago}</Badge></TableCell>
                 <TableCell className="text-right font-semibold">${s.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" onClick={() => setSelected(s)}>
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
             {filteredSales.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No hay ventas en este rango</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No hay ventas en este rango</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
       </Card>
+
+      <SaleDetailModal sale={selected} onOpenChange={(o) => !o && setSelected(null)} />
     </div>
   );
 }
