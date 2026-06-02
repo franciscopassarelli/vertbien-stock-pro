@@ -67,14 +67,14 @@ function SalesPage() {
         ))}
         <div className="flex gap-2 ml-auto">
           <Select value={vendor} onValueChange={setVendor}>
-            <SelectTrigger className="w-[160px] h-8"><SelectValue placeholder="Vendedor" /></SelectTrigger>
+            <SelectTrigger className=" h-8"><SelectValue placeholder="Vendedor" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los vendedores</SelectItem>
               {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={method} onValueChange={setMethod}>
-            <SelectTrigger className="w-[160px] h-8"><SelectValue placeholder="Método" /></SelectTrigger>
+            <SelectTrigger className=" h-8"><SelectValue placeholder="Método" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los métodos</SelectItem>
               {PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
