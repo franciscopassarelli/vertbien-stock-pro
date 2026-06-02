@@ -20,10 +20,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
-    if (user) localStorage.setItem(KEY, user);
-    else localStorage.removeItem(KEY);
-  }, [user, hydrated]);
+ if (user) localStorage.setItem(KEY, user);
+ else localStorage.removeItem(KEY);
+  }, [user]);
   return (
     <Ctx.Provider value={{ user, hydrated, login: setUser, logout: () => setUser(null) }}>
       {children}

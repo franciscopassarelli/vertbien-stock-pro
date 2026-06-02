@@ -75,6 +75,19 @@ function Dashboard() {
 
   const rangeLabel = range === "day" ? "hoy" : range === "week" ? "últ. 7 días" : range === "month" ? "últ. 30 días" : "total";
 
+
+  const topProducts = useMemo(() => {
+  const map = new Map<string, number>();
+  filtered.forEach(s => {
+    s.items.forEach(i => {
+      map.set(i.nombre, (map.get(i.nombre) || 0) + i.cantidad);
+    });
+  });
+  return Array.from(map.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5); // Solo los top 5
+}, [filtered]);
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
@@ -90,14 +103,14 @@ function Dashboard() {
         ))}
         <div className="flex gap-2 ml-auto flex-wrap">
           <Select value={vendor} onValueChange={setVendor}>
-            <SelectTrigger className="w-[170px] h-8"><SelectValue /></SelectTrigger>
+            <SelectTrigger className=""><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los vendedores</SelectItem>
               {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={method} onValueChange={setMethod}>
-            <SelectTrigger className="w-[170px] h-8"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full h-8"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los métodos</SelectItem>
               {PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
@@ -148,7 +161,7 @@ function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-5">
           <h2 className="font-semibold mb-3">Ventas por vendedor</h2>
           {byVendor.length === 0 ? (
@@ -167,6 +180,22 @@ function Dashboard() {
             </div>
           )}
         </Card>
+
+        <Card className="p-5">
+  <h2 className="font-semibold mb-3">Top 5 productos</h2>
+  {topProducts.length === 0 ? (
+    <p className="text-sm text-muted-foreground py-6 text-center">Sin ventas para calcular</p>
+  ) : (
+    <div className="space-y-2">
+      {topProducts.map(([name, count]) => (
+        <div key={name} className="flex justify-between items-center py-2 border-b border-border/60 last:border-0">
+          <p className="text-sm truncate">{name}</p>
+          <Badge variant="outline">{count} vendidas</Badge>
+        </div>
+      ))}
+    </div>
+  )}
+</Card>
 
         <Card className="p-5">
           <h2 className="font-semibold mb-3">Por método de pago</h2>

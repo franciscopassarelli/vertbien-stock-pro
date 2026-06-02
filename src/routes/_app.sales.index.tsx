@@ -129,8 +129,8 @@ function SalesPage() {
           <TableBody>
             {filteredSales.map((s) => (
               <TableRow key={s.id}>
-                <TableCell className="font-mono text-xs text-muted-foreground">{s.id.slice(0, 8)}</TableCell>
-                <TableCell>{new Date(s.fecha).toLocaleString()}</TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">{String(s.id).slice(0, 8)}</TableCell>
+                <TableCell>{s.fecha ? new Date(s.fecha).toLocaleString() : "sin fecha"}</TableCell>
                 <TableCell>{s.items.length} items</TableCell>
                 <TableCell>{s.vendedor}</TableCell>
                 <TableCell><Badge variant="secondary">{s.metodoPago}</Badge></TableCell>

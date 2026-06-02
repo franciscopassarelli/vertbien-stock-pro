@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-
+import { createContext, useEffect, useState, ReactNode, useCallback, useContext } from "react";
+import { supabase } from "@/lib/supabase";
 export type Unit = "unidad" | "kg" | "gramo" | "litro" | "ml";
 
 export const UNITS: Unit[] = ["unidad", "kg", "gramo", "litro", "ml"];
@@ -67,86 +67,204 @@ interface StoreState {
   products: Product[];
   categories: string[];
   sales: Sale[];
-  addProduct: (p: Omit<Product, "id">) => void;
-  updateProduct: (id: string, p: Omit<Product, "id">) => void;
-  deleteProduct: (id: string) => void;
-  addCategory: (name: string) => void;
-  deleteCategory: (name: string) => { ok: boolean; reason?: string };
-  addSale: (s: Omit<Sale, "id" | "fecha">) => void;
+  // Ahora todas son async porque tocan Supabase
+  addProduct: (p: Omit<Product, "id">) => Promise<void>;
+  updateProduct: (id: string, p: Omit<Product, "id">) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  addCategory: (name: string) => Promise<void>;
+  deleteCategory: (name: string) => Promise<{ ok: boolean; reason?: string }>;
+  addSale: (s: Omit<Sale, "id" | "fecha">) => Promise<void>;
 }
-
 const StoreCtx = createContext<StoreState | null>(null);
 
 const KEY = "vertbien-store-v1";
 
-const seed = {
-  categories: ["Limpieza", "Cocina", "Personal"],
-  products: [
-    { id: "p1", nombre: "Detergente Concentrado", categoria: "Limpieza", precio: 1200, unidad: "litro" as Unit, stock: 25, url_imagen: "", stockBajo: 10, stockCritico: 3 },
-    { id: "p2", nombre: "Aceite de Girasol", categoria: "Cocina", precio: 1800, unidad: "litro" as Unit, stock: 18, url_imagen: "", stockBajo: 8, stockCritico: 2 },
-    { id: "p3", nombre: "Jabón en Polvo", categoria: "Limpieza", precio: 950, unidad: "kg" as Unit, stock: 40, url_imagen: "", stockBajo: 15, stockCritico: 5 },
-    { id: "p4", nombre: "Esponja Multiuso", categoria: "Limpieza", precio: 350, unidad: "unidad" as Unit, stock: 60, url_imagen: "", stockBajo: 20, stockCritico: 5 },
-  ],
-  sales: [] as Sale[],
-};
-
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState(seed);
-  const [hydrated, setHydrated] = useState(false);
+  const [state, setState] = useState({ 
+    categories: ["Limpieza", "Cocina", "Personal"], 
+    products: [] as Product[], 
+    sales: [] as Sale[] 
+  });
 
+  // 1. Carga inicial desde Supabase
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        // Migración: asegurar campos nuevos
-        parsed.products = (parsed.products || []).map((p: any) => ({
-          stockBajo: 10,
-          stockCritico: 3,
-          ...p,
-        }));
-        setState(parsed);
-      }
-    } catch {}
-    setHydrated(true);
-  }, []);
+    async function loadData() {
+      const { data: productos } = await supabase.from('productos').select('*');
+      const { data: categorias } = await supabase.from('categorias').select('nombre');
+      const { data: ventas } = await supabase
+  .from('ventas')
+  .select(`
+    *,
+    items_venta (
+      producto_id,
+      nombre,
+      cantidad,
+      precio
+    )
+  `);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
-  }, [state, hydrated]);
+ if (ventas) {
+  const mappedSales = ventas.map((v: any) => {
 
-  const addProduct = useCallback((p: Omit<Product, "id">) => {
-    setState((s: any) => ({ ...s, products: [...s.products, { ...p, id: crypto.randomUUID() }] }));
-  }, []);
-  const updateProduct = useCallback((id: string, p: Omit<Product, "id">) => {
-    setState((s: any) => ({ ...s, products: s.products.map((x: Product) => x.id === id ? { ...p, id } : x) }));
-  }, []);
-  const deleteProduct = useCallback((id: string) => {
-    setState((s: any) => ({ ...s, products: s.products.filter((x: Product) => x.id !== id) }));
-  }, []);
-  const addCategory = useCallback((name: string) => {
-    setState((s: any) => s.categories.includes(name) ? s : ({ ...s, categories: [...s.categories, name] }));
-  }, []);
-  const deleteCategory = useCallback((name: string) => {
-    let result: { ok: boolean; reason?: string } = { ok: true };
-    setState((s: any) => {
-      const hasStock = s.products.some((p: Product) => p.categoria === name && p.stock > 0);
-      if (hasStock) { result = { ok: false, reason: "La categoría tiene productos con stock activo." }; return s; }
-      return { ...s, categories: s.categories.filter((c: string) => c !== name) };
+    console.log("Datos crudos de esta venta:", v);
+
+    return {
+      
+      id: v.id,
+      // Nos aseguramos de leer la fecha correctamente
+      fecha: v.fecha ? v.fecha : new Date().toISOString(),
+      vendedor: v.vendedor,
+      // Importante: usamos el nombre de columna REAL de tu tabla de Supabase
+      metodoPago: v.metodo_pago, 
+      total: v.total,
+      items: v.items_venta ? v.items_venta.map((i: any) => ({
+        productId: i.producto_id,
+        nombre: i.nombre,
+        cantidad: i.cantidad,
+        precio: i.precio
+      })) : []
+    }; 
     });
-    return result;
+  setState((s) => ({ ...s, sales: mappedSales }));
+}
+
+if (productos) {
+        // Mapeo: Base de datos (snake_case) -> Aplicación (camelCase)
+        const mappedProducts = productos.map((p: any) => ({
+          id: p.id,
+          nombre: p.nombre,
+          categoria: p.categoria,
+          precio: p.precio,
+          unidad: p.unidad,
+          stock: p.stock,
+          url_imagen: p.url_imagen,
+          stockBajo: p.stock_bajo,
+          stockCritico: p.stock_critico
+        }));
+        setState((s) => ({ ...s, products: mappedProducts }));
+      }
+
+      if (categorias) {
+      setState((s) => ({ ...s, categories: categorias.map(c => c.nombre) }));
+    }
+
+   
+    }
+    loadData();
   }, []);
-  const addSale = useCallback((s: Omit<Sale, "id" | "fecha">) => {
-    setState((st: any) => ({ ...st, sales: [{ ...s, id: crypto.randomUUID(), fecha: new Date().toISOString() }, ...st.sales] }));
+
+  const addCategory = useCallback(async (name: string) => {
+    const {error} = await supabase.from('categorias').insert([{ nombre: name }]);
+    if (!error) {
+      setState((s: any) => s.categories.includes(name) ? s : ({ ...s, categories: [...s.categories, name] }));
+    }else {
+        console.error("Error al agregar categoría:", error);
+ }  
   }, []);
+
+  const deleteCategory = useCallback(async (name: string) => {
+  // Primero borramos de Supabase
+  const { error } = await supabase.from('categorias').delete().eq('nombre', name);
+  
+  if (!error) {
+    setState((s) => ({ 
+      ...s, 
+      categories: s.categories.filter((c: string) => c !== name) 
+    }));
+    return { ok: true };
+  }
+  return { ok: false, reason: "Error al borrar en base de datos" };
+}, []);
+
+  
+
+
+  // 2. Acciones centralizadas
+  const addProduct = useCallback(async (p: Omit<Product, "id">) => {
+    const { data, error } = await supabase.from('productos').insert([{
+      nombre: p.nombre,
+      categoria: p.categoria,
+      precio: p.precio,
+      stock: p.stock,
+      stock_bajo: p.stockBajo,
+      stock_critico: p.stockCritico,
+      unidad: p.unidad,
+      url_imagen: p.url_imagen
+    }]).select().single();
+
+    if (!error && data) {
+      const newProduct = { ...data, stockBajo: data.stock_bajo, stockCritico: data.stock_critico };
+      setState((s) => ({ ...s, products: [...s.products, newProduct] }));
+    }
+  }, []);
+
+  const updateProduct = useCallback(async (id: string, p: Omit<Product, "id">) => {
+    const { error } = await supabase.from('productos').update({
+      nombre: p.nombre,
+      categoria: p.categoria,
+      precio: p.precio,
+      stock: p.stock,
+      stock_bajo: p.stockBajo,
+      stock_critico: p.stockCritico,
+      unidad: p.unidad,
+      url_imagen: p.url_imagen
+    }).eq('id', id);
+
+    if (!error) {
+      setState((s) => ({ 
+        ...s, 
+        products: s.products.map((x) => x.id === id ? { ...p, id } : x) 
+      }));
+    }
+  }, []);
+
+  const deleteProduct = useCallback(async (id: string) => {
+    const { error } = await supabase.from('productos').delete().eq('id', id);
+    if (!error) {
+      setState((s) => ({ ...s, products: s.products.filter((x) => x.id !== id) }));
+    }
+  }, []);
+
+ const addSale = useCallback(async (s: Omit<Sale, "id" | "fecha">) => {
+  // 1. Insertar la venta
+  const { data: venta, error: vError } = await supabase
+    .from('ventas')
+    .insert([{ total: s.total, vendedor: s.vendedor, metodo_pago: s.metodoPago }])
+    .select()
+    .single();
+
+  if (vError || !venta) return;
+
+  // 2. Preparar y enviar los items asociados al ID de la nueva venta
+  const itemsConId = s.items.map(item => ({
+    venta_id: venta.id,
+    producto_id: item.productId,
+    nombre: item.nombre,
+    cantidad: item.cantidad,
+    precio: item.precio
+  }));
+
+  const { error: iError } = await supabase.from('items_venta').insert(itemsConId);
+  
+  if (!iError) {
+    setState((st: any) => ({ ...st, sales: [{ ...venta, items: s.items }, ...st.sales] }));
+  }
+}, []);
+ 
+
 
   return (
     <StoreCtx.Provider value={{ ...state, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, addSale }}>
       {children}
     </StoreCtx.Provider>
+
+    
   );
+
+  
 }
+
+// ... (después del return del StoreProvider y antes de que termine el archivo)
 
 export function useStore() {
   const ctx = useContext(StoreCtx);

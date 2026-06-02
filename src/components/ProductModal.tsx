@@ -45,17 +45,32 @@ export function ProductModal({ open, onOpenChange, editing }: Props) {
     reader.readAsDataURL(file);
   };
 
-  const save = () => {
+const save = async () => {
+    // 1. Validaciones
     if (!form.nombre.trim()) return toast.error("El nombre es obligatorio");
     if (!form.categoria) return toast.error("Seleccioná una categoría");
     if (form.precio <= 0) return toast.error("El precio debe ser mayor a 0");
     if (form.stock <= 0) return toast.error("El stock debe ser mayor a 0");
     if (form.stockCritico >= form.stockBajo) return toast.error("Stock crítico debe ser menor que stock bajo");
-    if (editing) updateProduct(editing.id, form);
-    else addProduct(form);
-    onOpenChange(false);
-  };
 
+  try {
+    const productToSave = { 
+      ...form, 
+      url_imagen: "" // FORZAMOS A VACÍO TEMPORALMENTE
+    };
+    
+    if (editing) {
+      await updateProduct(editing.id, productToSave);
+    } else {
+      await addProduct(productToSave); // Enviamos sin imagen
+    }
+    onOpenChange(false);
+    toast.success("Producto guardado");
+  } catch (error: any) {
+    console.error("Error completo:", error); // MIRA LA CONSOLA AQUÍ
+    toast.error("Error: " + error.message);
+  }
+};
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">

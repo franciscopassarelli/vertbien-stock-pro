@@ -20,6 +20,11 @@ export function LoginForm() {
     nav({ to: "/dashboard" });
   };
 
+  const invitado = () => {
+    login("invitado@vertbien.com");
+    nav({ to: "/dashboard" });
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--gradient-primary)" }}>
       <Card className="w-full max-w-md p-8 shadow-2xl border-0">
@@ -40,6 +45,15 @@ export function LoginForm() {
             <Input id="pass" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
           <Button type="submit" className="w-full" size="lg">Ingresar</Button>
+          <br />
+        <Button
+  type="button"
+  variant="secondary"
+  className="w-full mt-2"
+  onClick={invitado}
+>
+  👤 Acceder como invitado
+</Button>
         </form>
       </Card>
     </div>

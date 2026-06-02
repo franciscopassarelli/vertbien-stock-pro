@@ -12,7 +12,7 @@ function AppLayout() {
   const { user, hydrated } = useAuth();
   const nav = useNavigate();
   useEffect(() => {
-    if (hydrated && !user) nav({ to: "/login" });
+    if (hydrated && !user) nav({ to: "/dashboard" });
   }, [user, hydrated, nav]);
 
   if (!hydrated) return null;

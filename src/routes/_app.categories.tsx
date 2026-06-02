@@ -33,11 +33,21 @@ function CategoriesPage() {
     toast.success("Categoría creada");
   };
 
-  const remove = (n: string) => {
-    const r = deleteCategory(n);
-    if (!r.ok) toast.error(r.reason || "No se puede eliminar");
-    else toast.success("Categoría eliminada");
+
+  const deleteCategoryWithConfirmation = (name: string) => {
+    if (window.confirm(`¿Estás seguro de que quieres eliminar la categoría "${name}"? Esto no eliminará los productos asociados, pero los dejará sin categoría.`)) {
+      deleteCategory(name);
+      toast.success("Categoría eliminada");
+    }
   };
+
+  const remove = (name: string) => {
+    deleteCategoryWithConfirmation(name);
+  };
+
+  
+
+
 
   return (
     <div className="space-y-6 max-w-4xl">
