@@ -1,13 +1,4 @@
 {
-  "rewrites": [
-    {
-      "source": "/((?!_next/static|_next/image|assets|api/|favicon.ico).*)",
-      "destination": "/api/index"
-    }
-  ],
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs20.x"
-    }
-  }
+  "installCommand": "bun install",
+  "buildCommand": "bun run build"
 }
